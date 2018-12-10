@@ -171,6 +171,15 @@ defmodule Day6 do
     |> largest_finite_area()
   end
 
+  def part2(input) do
+    input
+    |> File.read!()
+    |> String.trim_trailing()
+    |> String.split("\n", trim: true)
+    |> Enum.map(&parse_coordinate/1)
+    |> safe_region(10000)
+  end
+
   @doc """
   ## Examples
 
@@ -202,6 +211,40 @@ defmodule Day6 do
       Enum.max_by(finite_coordinates, fn {_, count} -> count end)
 
     count
+  end
+
+  @doc """
+  We need to find all the coordinates that have a manhattan distance sum < 1000
+  Then sum those
+
+  ## Examples
+
+      iex> Day6.safe_region([
+      ...>    {1, 1},
+      ...>    {1, 6},
+      ...>    {8, 3},
+      ...>    {3, 4},
+      ...>    {5, 5},
+      ...>    {8, 9}
+      ...>  ], 32)
+      16
+
+  """
+  def safe_region(main_coords, max_distance) do
+    grid = main_coords |> bounding_box() |> build_grid()
+
+    enum =
+      for {x, y} <- grid,
+          sum_distance({x, y}, main_coords) < max_distance,
+          do: {x, y}
+
+    length(enum)
+  end
+
+  def sum_distance(point, main_coords) do
+    main_coords
+    |> Enum.map(&manhattan_distance(&1, point))
+    |> Enum.sum()
   end
 
   defp manhattan_distance({x1, y1}, {x2, y2}) do
