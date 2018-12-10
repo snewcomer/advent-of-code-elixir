@@ -239,6 +239,15 @@ defmodule Day6 do
           do: {x, y}
 
     length(enum)
+
+    # x_range
+    # |> Task.async_stream(fn x ->
+    #   Enum.reduce(y_range, 0, fn y, count ->
+    #     point = {x, y}
+    #     if sum_distances(coordinates, point) < maximum_distance, do: count + 1, else: count
+    #   end)
+    # end, ordered: false)
+    # |> Enum.reduce(0, fn {:ok, count} , acc -> count + acc end)
   end
 
   def sum_distance(point, main_coords) do
