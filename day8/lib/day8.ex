@@ -11,6 +11,20 @@ defmodule Day8 do
     sum_metadata(root)
   end
 
+  def part2(input) do
+  {root, []} =
+    input
+    |> File.read!()
+    |> String.trim_trailing()
+    |> String.split(" ", trim: true)
+    |> Enum.map(&String.to_integer/1)
+    |> build_tree()
+
+    # get the root node meta data entries, take each one as an indx, then at each indx
+    # sum the meta data entries recursively
+    root_metadata_sum(root)
+  end
+
   @doc """
 
   ## Examples
@@ -70,6 +84,37 @@ defmodule Day8 do
     # might be empty array
     # {[children], [1, 1, 2]}
     build_acc(children, metadata, 0)
+  end
+
+  @doc """
+  ## Examples
+
+    iex> {tree, []} = Day8.build_tree([2, 3, 0, 3, 10, 11, 12, 1, 1, 0, 1, 99, 2, 1, 1, 2])
+    iex> Day8.root_metadata_sum(tree)
+    66
+
+  """
+  def root_metadata_sum({children, metadata}) do
+    sum_root_indexed(children, metadata)
+  end
+
+  defp sum_root_indexed([], metadata) do
+    # only occurs if parent metadata has an indx for it
+    Enum.sum(metadata)
+  end
+  defp sum_root_indexed(children, metadata) do
+    indexed_sums =
+      for indx <- metadata,
+          child = Enum.at(children, indx - 1),
+          do: root_metadata_sum(child)
+
+    Enum.sum(indexed_sums)
+
+    # def indexed_sum({[], metadata}) do
+    #   Enum.sum(metadata)
+    # end
+    # indexed_sum = Enum.map(children, &indexed_sum/1)
+    # Enum.reduce(metadata, 0, &Enum.at(indexed_sums, &1 -1, 0) + &2)
   end
 
   def build_acc([], metadata, acc) do
