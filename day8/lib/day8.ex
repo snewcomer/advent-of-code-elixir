@@ -1,4 +1,26 @@
 defmodule Day8 do
+
+  defmodule Tree do
+    defstruct [:root]
+    @type metadata :: integer
+    @type tree_node :: {[tree_node], [metadata]}
+    @type t :: %Tree{root: tree_node}
+
+    defimpl Enumerable do
+      def member?(_coll, _value), do: {:error, __MODULE__}
+      def count(_coll), do: {:error, __MODULE__}
+      def slice(_coll), do: {:error, __MODULE__}
+      def reduce(%Three{root: root}, acc, fun) do
+        node_reduce(root, acc, fun)
+      end
+
+      defp node_reduce({[child | children], metadata}, acc, fun) do
+        Enum.reduce(metadata, acc, fun)
+      end
+    end
+  end
+
+
   def part1(input) do
   {root, []} =
     input
