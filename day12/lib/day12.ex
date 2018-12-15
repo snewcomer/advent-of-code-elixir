@@ -12,9 +12,11 @@ defmodule Day12 do
       |> String.split("\n", trim: true)
       |> parse_notes()
 
-    Enum.reduce_while(0..19, row, fn i, row ->
-      if i > 19, do: {:halt, row}, else: {:cont, walk_row(row, rule_set)}
+    Stream.scan(1..20, row, fn _i, row ->
+      walk_row(row, rule_set)
     end)
+    |> Enum.to_list()
+    |> Enum.at(-1)
     |> Enum.reduce(0, fn {step, indx}, acc ->
       cond do
         step == 1 -> indx + acc
@@ -116,8 +118,8 @@ defmodule Day12 do
   def walk_row(row, rule_set) do
     row
     |> pad()
-    |> Enum.chunk_every(5, 1, :discard)
-    |> Enum.map(fn chunk ->
+    |> Stream.chunk_every(5, 1, :discard)
+    |> Stream.map(fn chunk ->
       indexs = build_indices(chunk)
 
       steps =
