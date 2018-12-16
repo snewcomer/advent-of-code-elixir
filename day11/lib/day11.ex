@@ -85,11 +85,4 @@ defmodule Day11 do
     |> trunc()
     |> Kernel.-(5)
   end
-
-  # defp parse_int(num) do
-  #   case num >= 1 do
-  #     true -> parse_int(num / 10)
-  #     false -> num |> Kernel.trunc()
-  #   end
-  # end
 end
