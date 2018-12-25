@@ -17,26 +17,49 @@ defmodule Day22 do
     |> find_risk_level()
   end
 
+  @doc """
+
+  ## Examples
+
+      # iex> Day22.part2()
+      # 235
+
+  """
   def part2() do
-    build_grid()
-    |> process_states()
+     TODO
+    grid = build_grid()
+
+    dfs(grid, [{0, 0}], MapSet.new([{0, 0}]), [])
+    |> process_paths()
+    |> Enum.reject(& !Enum.member?(&1, {3, 3}))
+    |> Enum.map(fn paths ->
+      Enum.reduce(paths, {0, 0}, fn coord, {time, current_type} ->
+        {_, state_type} = Map.get(grid, coord)
+        case state_type == current_type do
+          true -> {1 + time, state_type}
+          false -> {7 + time, state_type}
+        end
+      end)
+    end)
+    |> Enum.max_by(fn {time, _} -> time end)
+    |> elem(0)
   end
 
   @doc """
 
   ## Examples
 
-      # iex> graph = Day22.build_grid()
-      # iex> Map.get(graph, {0, 0})
-      # {5913, 0}
-      # iex> Map.get(graph, {1, 0})
-      # {2537, 2}
+      iex> graph = Day22.build_grid()
+      iex> Map.get(graph, {0, 0})
+      {5913, 0}
+      iex> Map.get(graph, {1, 0})
+      {2537, 2}
 
   """
   def build_grid do
-    0..10
+    0..3
     |> Enum.reduce(%{}, fn x, acc ->
-      0..10
+      0..3
       |> Enum.reduce(acc, fn y, acc ->
         Map.put(acc, {x, y}, calculate_erosion_level_region_type({x, y}, acc))
       end)
@@ -56,7 +79,7 @@ defmodule Day22 do
   7min -> change tools
   end with :torch
 
-  BFS algorithm queue each adjacent node as long as within the graph.
+  dfs algorithm queue each adjacent node as long as within the graph.
   Keep processing until can no longer process in grid
   keep queuing {x, y} to internal array and updating time
   add new node (queue to outer array) when branch off
@@ -65,15 +88,27 @@ defmodule Day22 do
   ]
   |> Enum.reduce and find lowest
 
-  """
-  def process_states(graph) do
-    # # bfs(graph, [{0, 0}], [{0, 0}], MapSet.new())
-    # expand_nodes([{0, 0}])
-    # |> Enum.reduce([], fn coord, acc ->
-    #   acc = acc ++ [[coord]]
+  ## Examples
 
-    #   bfs(graph, acc, [coord], seen)
-    # end)
+      # iex> graph = Day22.build_grid()
+      # iex> seen = Day22.dfs(graph, [{0, 0}], MapSet.new([{0, 0}]))
+      # iex> Day22.process_paths(seen) |> Enum.at(0)
+      # [{1, 111}, {7, 602}, {3, 3}, {6, 90}, {1, 67}]
+
+  """
+  def process_paths(seen) do
+    seen
+    |> Enum.chunk_while([], fn item, acc ->
+      if item > List.last(acc) do
+        {:cont, [item | acc]}
+      else
+        {:cont, Enum.reverse([item | acc]), []}
+      end
+    end, fn
+      [] -> {:cont, []}
+      acc -> {:cont, Enum.reverse(acc), []}
+    end
+    )
   end
 
   @doc """
@@ -83,24 +118,26 @@ defmodule Day22 do
 
   ## Examples
 
-      # iex> graph = Day22.build_grid()
-      # iex> Day22.bfs(graph, [{0, 0}], {0, 0}, MapSet.new([{0, 0}]))
-      # [{0, 0}, [[{0, 1}, [[{1, 1}]]], [{1, 0}]]]
+      iex> graph = Day22.build_grid()
+      iex> Day22.dfs(graph, [{0, 0}], MapSet.new([{0, 0}]), [])
+      []
 
   """
-  def bfs(_graph, acc, [], _seen), do: acc
-  def bfs(graph, acc, unseen, seen) do
+  def dfs(_graph, [], seen, acc), do: acc
+  def dfs(graph, unseen, seen, acc) do
     set_of_neighbors =
-      expand_nodes(unseen)
+      for coord <- unseen do
+        expand_nodes(coord) |> MapSet.new()
+      end
       |> prune_seen(seen)
 
-    seen = MapSet.union(seen, MapSet.new(set_of_neighbors))
-    child_nodes = Enum.map(set_of_neighbors, fn coord ->
-      bfs(
+    # move through each neighbor and process their child_nodes until no child nodes
+    child_nodes = Enum.reduce(set_of_neighbors, [], fn coord, acc ->
+      dfs(
         graph,
         [coord],
-        coord,
-        MapSet.union(seen, MapSet.new([coord]))
+        MapSet.union(seen, MapSet.new(set_of_neighbors)),
+        [coord | acc]
       )
     end)
 
@@ -111,16 +148,14 @@ defmodule Day22 do
 
   ## Examples
 
-      iex> unseen = Day22.expand_nodes({3, 3})
-      iex> Day22.prune_seen(unseen, MapSet.new([{3, 2}, {1, 2}]))
-      [{2, 3}, {3, 4}, {4, 3}]
-      iex> Day22.prune_seen(unseen, MapSet.new([{3, 2}, {4, 3}]))
-      [{2, 3}, {3, 4}]
+      # iex> unseen = Day22.expand_nodes({3, 3}) |> MapSet.new()
+      # iex> Day22.prune_seen([unseen], MapSet.new([{3, 2}, {1, 2}]))
+      # [{2, 3}, {3, 4}, {4, 3}]
 
   """
   def prune_seen(unseen, seen) do
     unseen
-    |> Enum.reduce(MapSet.new(), fn coord, acc -> MapSet.union(MapSet.new([coord]), acc) end)
+    |> Enum.reduce(MapSet.new(), &MapSet.union/2)
     |> MapSet.difference(seen)
     |> MapSet.to_list()
   end
@@ -136,7 +171,7 @@ defmodule Day22 do
 
   """
   def expand_nodes({x, y}) do
-    Enum.filter([{x, y-1}, {x, y+1}, {x-1, y}, {x+1, y}], fn {x, y} -> x >=0 and y >= 0 and x <= 10 and y <= 10 end)
+    Enum.filter([{x, y-1}, {x, y+1}, {x-1, y}, {x+1, y}], fn {x, y} -> x >=0 and y >= 0 and x <= 3 and y <= 3 end)
   end
 
   @doc """
@@ -159,9 +194,9 @@ defmodule Day22 do
 
   ## Examples
 
-      # iex> grid = Day22.build_grid()
-      # iex> Day22.calculate_erosion_level_region_type({0, 0}, grid)
-      # {5913, 0}
+      iex> grid = Day22.build_grid()
+      iex> Day22.calculate_erosion_level_region_type({0, 0}, grid)
+      {5913, 0}
 
   """
   def calculate_erosion_level_region_type({x, y}, graph) do
